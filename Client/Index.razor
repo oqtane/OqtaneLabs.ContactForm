@@ -1,0 +1,189 @@
+@using OqtaneLabs.ContactForm.Services
+@using OqtaneLabs.ContactForm.Models
+@using System.Threading
+@using System.Globalization
+
+@namespace OqtaneLabs.ContactForm
+@inherits ModuleBase
+@inject IContactFormService ContactFormService
+@inject ISettingService SettingService
+@inject NavigationManager NavigationManager
+
+<div class="mb-4" style="text-align: center;">@((MarkupString)_offer)</div>
+<form method="post" @formname="ContactForm" @onsubmit="SendMessage" data-enhance>
+    <input type="hidden" name="__RequestVerificationToken" value="@SiteState.AntiForgeryToken" />
+    <div class="container">
+        <div class="row mb-1 align-items-center">
+            <Label Class="col-sm-3" For="field1" HelpText="Please enter your name">Name:</Label>
+            <div class="col-sm-9">
+                <input id="field1" name="field1" class="form-control" @bind="@_field1" maxlength="50" />
+            </div>
+        </div>
+        <div class="row mb-1 align-items-center">
+            <Label Class="col-sm-3" For="field2" HelpText="Please enter your email address">Email:</Label>
+            <div class="col-sm-9">
+                <input id="field2" name="field2" class="form-control" @bind="@_field2" maxlength="50" />
+            </div>
+        </div>
+        @if (SettingService.GetSetting(ModuleState.Settings, "ContactForm:Message", "required") != "hidden")
+        {
+            <div class="row mb-1 align-items-center">
+                <Label Class="col-sm-3" For="field3" HelpText="Please include a short message related to your inquiry">Message:</Label>
+                <div class="col-sm-9">
+                    <textarea id="field3" name="field3" class="form-control" @bind="@_field3" rows="5" maxlength="1000"></textarea>
+                </div>
+            </div>
+        }
+        <div class="row mb-1 align-items-center">
+            <Label Class="col-sm-3" For="field4" HelpText="Please indicate that you are not a robot">Verification:</Label>
+            <div class="col-sm-9">
+                <input type="checkbox" id="field4" name="field4" class="me-1" onclick="document.getElementById('field6').value = (new Date()).toISOString().slice(0,19).replace('T',' ')">
+                <label class="form-check-label">I'm not a robot!</label>
+            </div>
+        </div>
+    </div>
+    <br /><br />
+    <button type="submit" class="btn btn-primary">Submit</button>
+    <input type="hidden" id="field5" name="field5" @bind="@_field5" />
+    <input type="hidden" id="field6" name="field6" @bind="@_field6" />
+    <input type="hidden" id="field7" name="field7" @bind="@_field7" />
+</form>
+
+@code {
+    public override List<Resource> Resources => new List<Resource>()
+    {
+        new Resource { ResourceType = ResourceType.Stylesheet, Url = ModulePath() + "Module.css" }
+    };
+
+    public override string RenderMode => RenderModes.Static;
+
+    [SupplyParameterFromForm(FormName = "ContactForm")]
+    public string Field1 { get => ""; set => _field1 = value; }
+
+    [SupplyParameterFromForm(FormName = "ContactForm")]
+    public string Field2 { get => ""; set => _field2 = value; }
+
+    [SupplyParameterFromForm(FormName = "ContactForm")]
+    public string Field3 { get => ""; set => _field3 = value; }
+
+    [SupplyParameterFromForm(FormName = "ContactForm")]
+    public string Field5 { get => ""; set => _field5 = value; }
+
+    [SupplyParameterFromForm(FormName = "ContactForm")]
+    public string Field6 { get => ""; set => _field6 = value; }
+
+    [SupplyParameterFromForm(FormName = "ContactForm")]
+    public string Field7 { get => ""; set => _field7 = value; }
+
+    private string _offer = "";
+
+    private string _field1 = ""; // name
+    private string _field2 = ""; // email
+    private string _field3 = ""; // message
+    private string _field5 = ""; // validation
+    private string _field6 = "true"; // validation
+    private string _field7 = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+
+    private int _mintime = 5; // 5 second minimum
+    private int _maxtime = 3600; // 1 hour maximum
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _offer = SettingService.GetSetting(ModuleState.Settings, "ContactForm:Offer", "");
+            if (string.IsNullOrEmpty(_offer) && UserSecurity.IsAuthorized(PageState.User, RoleNames.Admin))
+            {
+                AddModuleMessage("You Must Configure This Contact Form In Module Settings", MessageType.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            await logger.LogError(ex, "Error Loading Contact Form {Error}", ex.Message);
+            AddModuleMessage("Error Loading Contact Form", MessageType.Error);
+        }
+    }
+
+    private async Task SendMessage()
+    {
+        // form validation
+        var messageValid = true;
+        if (SettingService.GetSetting(ModuleState.Settings, "ContactForm:Message", "required") == "required")
+        {
+            messageValid = !string.IsNullOrEmpty(_field3);
+        }
+        if (!string.IsNullOrEmpty(_field1) && !string.IsNullOrEmpty(_field2) && Utilities.IsValidEmail(_field2) && messageValid)
+        {
+            // bot validation
+            if (_field5.Length == 0 && _field6.Length == 19 && DateTime.TryParseExact(_field6, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime timestamp1) &&
+              _field7.Length == 19 && DateTime.TryParseExact(_field7, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime timestamp2) &&
+              (timestamp1 - timestamp2).TotalSeconds >= _mintime && (timestamp1 - timestamp2).TotalSeconds <= _maxtime &&
+              (DateTime.UtcNow - timestamp2).TotalSeconds >= _mintime && (DateTime.UtcNow - timestamp2).TotalSeconds <= _maxtime)
+            {
+                // only allow visitors to submit a form once per day
+                var settings = await SettingService.GetVisitorSettingsAsync(PageState.VisitorId);
+                if (!settings.ContainsKey("SubmittedOn") || settings["SubmittedOn"] != DateTime.UtcNow.ToString("yyyy-MMM-dd"))
+                {
+                    try
+                    {
+                        var delivery = SettingService.GetSetting(ModuleState.Settings, "ContactForm:Delivery", "email");
+                        var response = SettingService.GetSetting(ModuleState.Settings, "ContactForm:Response", "");
+
+                        var contactform = new ContactForm();
+                        contactform.SiteId = PageState.Site.SiteId;
+                        contactform.Name = _field1;
+                        contactform.Email = _field2;
+                        contactform.Message = _field3;
+                        contactform.Title = ModuleState.Title;
+                        contactform.Recipient = SettingService.GetSetting(ModuleState.Settings, "ContactForm:Recipient", "");
+                        contactform.Response = (delivery != "browser") ? response : "";
+                        contactform.VisitorId = PageState.VisitorId;
+
+                        await ContactFormService.AddContactFormAsync(contactform);
+
+                        SettingService.SetSetting(settings, "SubmittedOn", DateTime.UtcNow.ToString("yyyy-MMM-dd"));
+                        await SettingService.UpdateVisitorSettingsAsync(settings, PageState.VisitorId);
+
+                        _field1 = "";
+                        _field2 = "";
+                        _field3 = "";
+                        _field5 = "";
+                        _field6 = "true";
+                        _field7 = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+
+                        if (delivery != "email")
+                        {
+                            AddModuleMessage(response, MessageType.Success);
+                        }
+                        else
+                        {
+                            AddModuleMessage("Thank You! You Should Expect A Response By Email Shortly.", MessageType.Success);
+                        }
+                    }
+                    catch
+                    {
+                        AddModuleMessage("Error Sending Message", MessageType.Error);
+                    }
+                }
+                else
+                {
+                    AddModuleMessage("Please Be Patient... You Should Receive An Email Response Shortly.", MessageType.Success);
+                }
+            }
+            else
+            {
+                // clear fields for bot
+                _field1 = "";
+                _field2 = "";
+                _field3 = "";
+                _field5 = "";
+                _field6 = "false";
+                _field7 = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+            }
+        }
+        else
+        {
+            AddModuleMessage("Please Enter All Required Fields", MessageType.Warning);
+        }
+    }
+}

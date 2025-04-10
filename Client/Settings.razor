@@ -1,0 +1,89 @@
+@namespace OqtaneLabs.ContactForm
+@inherits ModuleBase
+@inject ISettingService SettingService
+@implements Oqtane.Interfaces.ISettingsControl
+
+<div class="container">
+    <div class="row mb-1 align-items-center">
+        <Label Class="col-sm-3" For="offer" HelpText="Enter the specific offer you are making to the prospect">Offer: </Label>
+        <div class="col-sm-9">
+            <textarea id="offer" class="form-control" @bind="@_offer" rows="5"></textarea>
+        </div>
+    </div>
+    <div class="row mb-1 align-items-center">
+        <Label Class="col-sm-3" For="response" HelpText="Enter the response to provide to the prospect once they have provided the required information. This should include a Url to the asset they are requesting if applicable.">Response: </Label>
+        <div class="col-sm-9">
+            <textarea id="response" class="form-control" @bind="@_response" rows="5"></textarea>
+        </div>
+    </div>
+    <div class="row mb-1 align-items-center">
+        <Label Class="col-sm-3" For="delivery" HelpText="Indicate how the response should be delivered to the prospect">Delivery: </Label>
+        <div class="col-sm-9">
+            <select id="delivery" class="form-select" @bind="@_delivery">
+                <option value="email">Email</option>
+                <option value="browser">Web</option>
+                <option value="both">Both</option>
+            </select>
+        </div>
+    </div>
+    <div class="row mb-1 align-items-center">
+        <Label Class="col-sm-3" For="recipient" HelpText="Provide the email address of the person who should receive the contact form information">Recipient: </Label>
+        <div class="col-sm-9">
+            <input id="recipient" class="form-control" @bind="@_recipient" />
+        </div>
+    </div>
+    <div class="row mb-1 align-items-center">
+        <Label Class="col-sm-3" For="message" HelpText="Indicate if the message entered by the user is required, optional or hidden">Message: </Label>
+        <div class="col-sm-9">
+            <select id="message" class="form-select" @bind="@_message">
+                <option value="required">Required</option>
+                <option value="optional">Optional</option>
+                <option value="hidden">Hidden</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+@code {
+    public override string Title => "Contact Form Settings";
+
+    string _offer = "";
+    string _response = "";
+    string _delivery = "email";
+    string _recipient = "";
+    string _message = "required";
+
+    protected override void OnInitialized()
+    {
+        try
+        {
+            _offer = SettingService.GetSetting(ModuleState.Settings, "ContactForm:Offer", "");
+            _response = SettingService.GetSetting(ModuleState.Settings, "ContactForm:Response", "");
+            _delivery = SettingService.GetSetting(ModuleState.Settings, "ContactForm:Delivery", "email");
+            _recipient = SettingService.GetSetting(ModuleState.Settings, "ContactForm:Recipient", "");
+            _message = SettingService.GetSetting(ModuleState.Settings, "ContactForm:Message", "required");
+        }
+        catch (Exception ex)
+        {
+            AddModuleMessage(ex.Message, MessageType.Error);
+        }
+    }
+
+    public async Task UpdateSettings()
+    {
+        try
+        {
+			var settings = await SettingService.GetModuleSettingsAsync(ModuleState.ModuleId);
+            settings = SettingService.SetSetting(settings, "ContactForm:Offer", _offer, false);
+            settings = SettingService.SetSetting(settings, "ContactForm:Response", _response, false);
+            settings = SettingService.SetSetting(settings, "ContactForm:Delivery", _delivery, false);
+            settings = SettingService.SetSetting(settings, "ContactForm:Recipient", _recipient, false);
+            settings = SettingService.SetSetting(settings, "ContactForm:Message", _message, false);
+            await SettingService.UpdateModuleSettingsAsync(settings, ModuleState.ModuleId);
+        }
+        catch (Exception ex)
+        {
+            AddModuleMessage(ex.Message, MessageType.Error);
+        }
+    }
+}

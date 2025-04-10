@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
+    <Version>6.1.2</Version>
+	<Authors>Shaun Walker</Authors>
+	<Company>Oqtane Labs Inc</Company>
+	<Description>Contact Form</Description>
+	<Product>OqtaneLabs.ContactForm</Product>
+	<Copyright>Oqtane Labs Inc</Copyright>
+	<AssemblyName>OqtaneLabs.ContactForm.Server.Oqtane</AssemblyName>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup>
+	<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="9.0.4" />
+	<PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.4" />
+	<PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.4" />
+	<PackageReference Include="Microsoft.Extensions.Localization" Version="9.0.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Shared\OqtaneLabs.ContactForm.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Oqtane.Server" Version="6.1.2" />
+    <PackageReference Include="Oqtane.Shared" Version="6.1.2" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>    
+    <Version>6.1.2</Version>
+	<Authors>Shaun Walker</Authors>
+	<Company>Oqtane Labs Inc</Company>
+	<Description>Contact Form</Description>
+	<Product>OqtaneLabs.ContactForm</Product>
+	<Copyright>Oqtane Labs Inc</Copyright>
+	<AssemblyName>OqtaneLabs.ContactForm.Shared.Oqtane</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Oqtane.Shared" Version="6.1.2" />
+  </ItemGroup>
+
+</Project>
