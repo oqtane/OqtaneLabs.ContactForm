@@ -16,13 +16,13 @@
         <div class="row mb-1 align-items-center">
             <Label Class="col-sm-3" For="field1" HelpText="Please enter your name">Name:</Label>
             <div class="col-sm-9">
-                <input id="field1" name="field1" class="form-control" @bind="@_field1" maxlength="50" />
+                <input id="field1" name="field1" class="form-control" @bind="@_name" maxlength="50" />
             </div>
         </div>
         <div class="row mb-1 align-items-center">
             <Label Class="col-sm-3" For="field2" HelpText="Please enter your email address">Email:</Label>
             <div class="col-sm-9">
-                <input id="field2" name="field2" class="form-control" @bind="@_field2" maxlength="50" />
+                <input id="field2" name="field2" class="form-control" @bind="@_email" maxlength="50" />
             </div>
         </div>
         @if (SettingService.GetSetting(ModuleState.Settings, "ContactForm:Message", "required") != "hidden")
@@ -30,7 +30,7 @@
             <div class="row mb-1 align-items-center">
                 <Label Class="col-sm-3" For="field3" HelpText="Please include a short message related to your inquiry">Message:</Label>
                 <div class="col-sm-9">
-                    <textarea id="field3" name="field3" class="form-control" @bind="@_field3" rows="5" maxlength="1000"></textarea>
+                    <textarea id="field3" name="field3" class="form-control" @bind="@_message" rows="5" maxlength="1000"></textarea>
                 </div>
             </div>
         }
@@ -42,11 +42,12 @@
             </div>
         </div>
     </div>
-    <br /><br />
-    <button type="submit" class="btn btn-primary">Submit</button>
-    <input type="hidden" id="field5" name="field5" @bind="@_field5" />
-    <input type="hidden" id="field6" name="field6" @bind="@_field6" />
-    <input type="hidden" id="field7" name="field7" @bind="@_field7" />
+    <div class="mt-4" style="text-align: center;">
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </div>
+    <input type="hidden" id="field5" name="field5" @bind="@_validation1" />
+    <input type="hidden" id="field6" name="field6" @bind="@_validation2" />
+    <input type="hidden" id="field7" name="field7" @bind="@_validation3" />
 </form>
 
 @code {
@@ -58,31 +59,31 @@
     public override string RenderMode => RenderModes.Static;
 
     [SupplyParameterFromForm(FormName = "ContactForm")]
-    public string Field1 { get => ""; set => _field1 = value; }
+    public string Name { get => ""; set => _name = value; }
 
     [SupplyParameterFromForm(FormName = "ContactForm")]
-    public string Field2 { get => ""; set => _field2 = value; }
+    public string Email { get => ""; set => _email = value; }
 
     [SupplyParameterFromForm(FormName = "ContactForm")]
-    public string Field3 { get => ""; set => _field3 = value; }
+    public string Message { get => ""; set => _message = value; }
 
     [SupplyParameterFromForm(FormName = "ContactForm")]
-    public string Field5 { get => ""; set => _field5 = value; }
+    public string Validation1 { get => ""; set => _validation1 = value; }
 
     [SupplyParameterFromForm(FormName = "ContactForm")]
-    public string Field6 { get => ""; set => _field6 = value; }
+    public string Validation2 { get => ""; set => _validation2 = value; }
 
     [SupplyParameterFromForm(FormName = "ContactForm")]
-    public string Field7 { get => ""; set => _field7 = value; }
+    public string Validation3 { get => ""; set => _validation3 = value; }
 
     private string _offer = "";
 
-    private string _field1 = ""; // name
-    private string _field2 = ""; // email
-    private string _field3 = ""; // message
-    private string _field5 = ""; // validation
-    private string _field6 = "true"; // validation
-    private string _field7 = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+    private string _name = ""; // name
+    private string _email = ""; // email
+    private string _message = ""; // message
+    private string _validation1 = ""; // validation
+    private string _validation2 = "true"; // validation
+    private string _validation3 = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
 
     private int _mintime = 5; // 5 second minimum
     private int _maxtime = 3600; // 1 hour maximum
@@ -110,13 +111,13 @@
         var messageValid = true;
         if (SettingService.GetSetting(ModuleState.Settings, "ContactForm:Message", "required") == "required")
         {
-            messageValid = !string.IsNullOrEmpty(_field3);
+            messageValid = !string.IsNullOrEmpty(_message);
         }
-        if (!string.IsNullOrEmpty(_field1) && !string.IsNullOrEmpty(_field2) && Utilities.IsValidEmail(_field2) && messageValid)
+        if (!string.IsNullOrEmpty(_name) && !string.IsNullOrEmpty(_email) && Utilities.IsValidEmail(_email) && messageValid)
         {
             // bot validation
-            if (_field5.Length == 0 && _field6.Length == 19 && DateTime.TryParseExact(_field6, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime timestamp1) &&
-              _field7.Length == 19 && DateTime.TryParseExact(_field7, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime timestamp2) &&
+            if (_validation1.Length == 0 && _validation2.Length == 19 && DateTime.TryParseExact(_validation2, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime timestamp1) &&
+              _validation3.Length == 19 && DateTime.TryParseExact(_validation3, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime timestamp2) &&
               (timestamp1 - timestamp2).TotalSeconds >= _mintime && (timestamp1 - timestamp2).TotalSeconds <= _maxtime &&
               (DateTime.UtcNow - timestamp2).TotalSeconds >= _mintime && (DateTime.UtcNow - timestamp2).TotalSeconds <= _maxtime)
             {
@@ -131,9 +132,9 @@
 
                         var contactform = new ContactForm();
                         contactform.SiteId = PageState.Site.SiteId;
-                        contactform.Name = _field1;
-                        contactform.Email = _field2;
-                        contactform.Message = _field3;
+                        contactform.Name = _name;
+                        contactform.Email = _email;
+                        contactform.Message = _message;
                         contactform.Title = ModuleState.Title;
                         contactform.Recipient = SettingService.GetSetting(ModuleState.Settings, "ContactForm:Recipient", "");
                         contactform.Response = (delivery != "browser") ? response : "";
@@ -144,12 +145,12 @@
                         SettingService.SetSetting(settings, "SubmittedOn", DateTime.UtcNow.ToString("yyyy-MMM-dd"));
                         await SettingService.UpdateVisitorSettingsAsync(settings, PageState.VisitorId);
 
-                        _field1 = "";
-                        _field2 = "";
-                        _field3 = "";
-                        _field5 = "";
-                        _field6 = "true";
-                        _field7 = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+                        _name = "";
+                        _email = "";
+                        _message = "";
+                        _validation1 = "";
+                        _validation2 = "true";
+                        _validation3 = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
 
                         if (delivery != "email")
                         {
@@ -173,12 +174,12 @@
             else
             {
                 // clear fields for bot
-                _field1 = "";
-                _field2 = "";
-                _field3 = "";
-                _field5 = "";
-                _field6 = "false";
-                _field7 = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+                _name = "";
+                _email = "";
+                _message = "";
+                _validation1 = "";
+                _validation2 = "false";
+                _validation3 = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
             }
         }
         else
